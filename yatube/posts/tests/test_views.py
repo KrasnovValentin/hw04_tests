@@ -38,11 +38,10 @@ class PostVIEWSTest(TestCase):
                             text='NewestTestTextTextTextText',
                             group=cls.new_group,
                             )
-        cls.posts = Post.objects.all()
-        cls.posts_gr = Post.objects.all(). \
-            filter(group=cls.group)
-        cls.new_post = Post.objects.all(). \
-            filter(group=cls.new_group)
+        cls.posts = Post.objects.all().order_by('-id')
+        cls.posts_gr = Post.objects.filter(group=cls.group).order_by('-id')
+        cls.post_n_gr = Post.objects.filter(group=cls.new_group)
+        cls.posts_prf = Post.objects.filter(author=cls.user).order_by('-id')
 
     def setUp(self):
         """Создаем авторизованного и неавторизованного клиента"""
@@ -82,7 +81,7 @@ class PostVIEWSTest(TestCase):
     def test_index_correct_context(self):
         """Проверка контекста шаблона index.html."""
         response = self.guest_client.get(reverse('posts:index'))
-        post = response.context['page_obj']
+        post = response.context['posts'].order_by('-id')
         for i in range(len(self.posts)):
             self.assertEqual(post[i].text, self.posts[i].text)
             self.assertEqual(post[i].id, self.posts[i].id)
@@ -94,7 +93,7 @@ class PostVIEWSTest(TestCase):
         response = self.guest_client.get(reverse('posts:group_list',
                                                  kwargs={
                                                      'slug': self.group.slug}))
-        post = response.context['page_obj']
+        post = response.context['posts'].order_by('-id')
         for i in range(len(self.posts_gr)):
             self.assertEqual(post[i].group.title,
                              self.group.title)
@@ -110,7 +109,7 @@ class PostVIEWSTest(TestCase):
         response = self.guest_client. \
             get(reverse('posts:profile',
                         kwargs={'username': PostVIEWSTest.user}))
-        post = response.context['page_obj']
+        post = response.context['posts'].order_by('-id')
         for i in range(len(PostVIEWSTest.posts)):
             self.assertEqual(post[i].author.username,
                              f'{self.posts[i].author.username}')
@@ -141,10 +140,9 @@ class PostVIEWSTest(TestCase):
     def test_post_edit_correct_form(self):
         """Проверка формы редактирования поста."""
         for i in range(len(PostVIEWSTest.posts)):
-            response = self.author_client.get(reverse('posts:post_edit',
-                                                      args=[
-                                                          PostVIEWSTest.posts[
-                                                              i].id]))
+            response = self.author_client. \
+                get(reverse('posts:post_edit',
+                            args=[PostVIEWSTest.posts[i].id]))
             self.assertEqual(response.context['post'], self.posts[i])
             self.assertEqual(response.context['id'], self.posts[i].id)
             self.assertEqual(response.context['is_edit'], True)
@@ -157,27 +155,26 @@ class PostVIEWSTest(TestCase):
     def test_new_post_correct_context(self):
         """Проверка нового поста."""
         response = self.author_client.get(reverse('posts:index'))
-        new_post = response.context['page_obj'][9]
-        self.assertEqual(new_post.text, self.posts[9].text)
-        self.assertEqual(new_post.id, self.posts[9].id)
+        new_post = response.context['posts'].order_by('-id')[0]
+        self.assertEqual(new_post.text, self.posts[0].text)
+        self.assertEqual(new_post.id, self.posts[0].id)
 
         response = self.author_client. \
             get(reverse('posts:group_list',
-                        kwargs={
-                            'slug': self.new_group.slug}))
+                        kwargs={'slug': self.new_group.slug}))
         post_new_gr = response.context['page_obj'][0]
-        self.assertEqual(post_new_gr.text, self.new_post[0].text)
-        self.assertEqual(post_new_gr.id, self.new_post[0].id)
-        self.assertEqual(post_new_gr.group.title, self.new_post[0].group.title)
+        self.assertEqual(post_new_gr.text, self.post_n_gr[0].text)
+        self.assertEqual(post_new_gr.id, self.post_n_gr[0].id)
+        self.assertEqual(post_new_gr.group.title,
+                         self.post_n_gr[0].group.title)
 
         response = self.author_client. \
             get(reverse('posts:profile',
-                        kwargs={
-                            'username': PostVIEWSTest.user}))
-        post_prf = response.context['page_obj'][9]
+                        kwargs={'username': PostVIEWSTest.user.username}))
+        post_prf = response.context['posts'].order_by('-id')[0]
         self.assertEqual(post_prf.author.username,
-                         f'{self.new_post[0].author.username}')
-        self.assertEqual(post_prf.text, f'{self.new_post[0].text}')
+                         self.posts_prf[0].author.username)
+        self.assertEqual(post_prf.text, self.posts_prf[0].text)
 
 
 class PaginatorViewsTest(TestCase):
