@@ -4,13 +4,13 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from posts.forms import PostForm
 from posts.models import Post, Group
 
 User = get_user_model()
 
 
 class PostsCreateFormTests(TestCase):
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -24,7 +24,6 @@ class PostsCreateFormTests(TestCase):
             text='Super newest testing texxxxt',
             author=cls.user,
         )
-        cls.form = PostForm()
 
     def setUp(self):
         self.guest_client = Client()

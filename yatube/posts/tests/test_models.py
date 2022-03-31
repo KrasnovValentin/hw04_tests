@@ -7,6 +7,7 @@ User = get_user_model()
 
 
 class PostModelTest(TestCase):
+
     @classmethod
     def setUpClass(cls):
         """ Создаем тестовые экземпляры моделей."""
@@ -30,7 +31,7 @@ class PostModelTest(TestCase):
 
     def test_title_verb_help(self):
         """ Проверка verbose_name и help_text модели Post """
-        post = PostModelTest.post
+        post = self.post
         verb_name_av = post._meta.get_field('author').verbose_name
         verb_name_gr = post._meta.get_field('group').verbose_name
         help_text = post._meta.get_field('group').help_text

@@ -12,6 +12,7 @@ per_page = settings.PERPAGE
 
 
 class PostVIEWSTest(TestCase):
+
     @classmethod
     def setUpClass(cls):
         """ Создаем тестовые экземпляры постов."""
@@ -46,11 +47,10 @@ class PostVIEWSTest(TestCase):
     def setUp(self):
         """Создаем авторизованного и неавторизованного клиента"""
         self.guest_client = Client()
-        self.user = User.objects.create_user(username='StasBasov')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         self.author_client = Client()
-        self.author_client.force_login(PostVIEWSTest.user)
+        self.author_client.force_login(self.user)
 
     def test_pages_uses_correct_template(self):
         """Проверка на соответствие URL-адреса
@@ -70,7 +70,7 @@ class PostVIEWSTest(TestCase):
             with self.subTest(template=template):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
-        for post in PostVIEWSTest.posts:
+        for post in self.posts:
             response_det = self.guest_client.get(
                 reverse('posts:post_detail', args=[post.id]))
             self.assertTemplateUsed(response_det, 'posts/post_detail.html')
@@ -108,9 +108,9 @@ class PostVIEWSTest(TestCase):
         """Проверка контекста шаблона profile.html."""
         response = self.guest_client. \
             get(reverse('posts:profile',
-                        kwargs={'username': PostVIEWSTest.user}))
+                        kwargs={'username': self.user}))
         post = response.context['posts'].order_by('-id')
-        for i in range(len(PostVIEWSTest.posts)):
+        for i in range(len(self.posts)):
             self.assertEqual(post[i].author.username,
                              f'{self.posts[i].author.username}')
             self.assertEqual(post[i].text,
@@ -118,10 +118,10 @@ class PostVIEWSTest(TestCase):
 
     def test_post_detail_correct_context(self):
         """Проверка контекста шаблона post_detail.html."""
-        for i in range(len(PostVIEWSTest.posts)):
+        for i in range(len(self.posts)):
             response = self.guest_client. \
                 get(reverse('posts:post_detail',
-                            args=[PostVIEWSTest.posts[i].id]))
+                            args=[self.posts[i].id]))
             self.assertEqual(response.context['post'], self.posts[i])
             self.assertEqual(response.context['id'], self.posts[i].id)
             self.assertEqual(response.context['page_title'],
@@ -139,13 +139,14 @@ class PostVIEWSTest(TestCase):
 
     def test_post_edit_correct_form(self):
         """Проверка формы редактирования поста."""
-        for i in range(len(PostVIEWSTest.posts)):
+        for i in range(len(self.posts)):
             response = self.author_client. \
                 get(reverse('posts:post_edit',
-                            args=[PostVIEWSTest.posts[i].id]))
+                            args=[self.posts[i].id]))
             self.assertEqual(response.context['post'], self.posts[i])
             self.assertEqual(response.context['id'], self.posts[i].id)
             self.assertEqual(response.context['is_edit'], True)
+        self.posts_forms(response)
 
     def test_post_create_correct_form(self):
         """Проверка формы создания поста."""
@@ -170,7 +171,7 @@ class PostVIEWSTest(TestCase):
 
         response = self.author_client. \
             get(reverse('posts:profile',
-                        kwargs={'username': PostVIEWSTest.user.username}))
+                        kwargs={'username': self.user.username}))
         post_prf = response.context['posts'].order_by('-id')[0]
         self.assertEqual(post_prf.author.username,
                          self.posts_prf[0].author.username)
@@ -178,6 +179,7 @@ class PostVIEWSTest(TestCase):
 
 
 class PaginatorViewsTest(TestCase):
+
     @classmethod
     def setUpClass(cls):
         """ Создаем тестовые экземпляры постов."""
@@ -192,18 +194,17 @@ class PaginatorViewsTest(TestCase):
         pag_post_list = [Post(author=cls.user,
                               text=f'#_{i}__Pag_TestTextTextTextText',
                               group=cls.pag_group,
-                              ) for i in range(1, 14)]
+                              ) for i in range(13)]
 
         Post.objects.bulk_create(pag_post_list)
         cls.pag_posts = Post.objects.all()
 
     def setUp(self):
         """Создаем авторизованного и неавторизованного клиента"""
-        self.user = User.objects.create_user(username='StasBasov')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         self.author_client = Client()
-        self.author_client.force_login(PaginatorViewsTest.user)
+        self.author_client.force_login(self.user)
 
     def test_first_page_contains_ten_records(self):
         """Проверка: количество постов на первой странице равно 10."""
@@ -217,7 +218,7 @@ class PaginatorViewsTest(TestCase):
 
         response = self.author_client. \
             get(reverse('posts:profile',
-                        kwargs={'username': PaginatorViewsTest.user}))
+                        kwargs={'username': self.user}))
         self.assertEqual(len(response.context['page_obj']), per_page)
 
     def test_second_page_contains_three_records(self):
@@ -236,7 +237,7 @@ class PaginatorViewsTest(TestCase):
 
         response = self.author_client. \
             get(reverse('posts:profile',
-                        kwargs={'username': PaginatorViewsTest.user})
+                        kwargs={'username': self.user})
                 + '?page=2')
         self.assertEqual(len(response.context['page_obj']),
                          len(self.pag_posts) - per_page)

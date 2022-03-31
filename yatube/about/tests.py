@@ -4,6 +4,7 @@ from django.test import TestCase, Client
 
 
 class StaticURLTests(TestCase):
+
     def setUp(self):
         self.guest_client = Client()
 
